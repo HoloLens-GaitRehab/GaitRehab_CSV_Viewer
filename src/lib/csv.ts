@@ -1,4 +1,4 @@
-import Papa from 'papaparse'
+import Papa, { type ParseResult } from 'papaparse'
 import type { ParsedCsvFile } from '../types/sessionData'
 
 const aliasMap: Record<string, string> = {
@@ -62,16 +62,17 @@ export const canonicalizeHeader = (header: string): string => {
 export const parseCsvFile = async (file: File): Promise<ParsedCsvFile> => {
   const text = await file.text()
 
-  const result = Papa.parse<Record<string, string>>(text, {
+  const result: ParseResult<Record<string, string>> = Papa.parse(text, {
     header: true,
     skipEmptyLines: true,
     transformHeader: canonicalizeHeader,
-    transform: (value) => value.trim(),
+    transform: (value: string) => value.trim(),
   })
 
   const headers = (result.meta.fields ?? []).filter(Boolean)
   const rows = result.data.filter(
-    (row) => Object.values(row).some((value) => value !== ''),
+    (row: Record<string, string>) =>
+      Object.values(row).some((value: string) => value !== ''),
   )
 
   const warnings: string[] = []

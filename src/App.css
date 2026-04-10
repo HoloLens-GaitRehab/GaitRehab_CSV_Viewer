@@ -73,10 +73,26 @@ h1 {
 .upload-button {
   margin-top: 1rem;
   display: inline-block;
+  cursor: pointer;
   padding: 0.6rem 1rem;
   border-radius: 999px;
   background: linear-gradient(120deg, #f6ba5f 0%, #f28766 100%);
   color: #301205;
+  font-weight: 600;
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-meta {
+  margin: 0.8rem 0 0;
+  color: var(--text-muted);
+}
+
+.error-text {
+  margin: 0.4rem 0 0;
+  color: #8e1c2c;
   font-weight: 600;
 }
 
@@ -94,9 +110,74 @@ h1 {
   padding: 0.28rem 0.62rem;
 }
 
+.schema-meta {
+  margin: 0.8rem 0;
+  color: var(--text-muted);
+}
+
+.missing-chip {
+  border-color: rgba(133, 26, 26, 0.3);
+  background: rgba(230, 85, 85, 0.12);
+}
+
 .empty-message {
   margin: 0;
   color: var(--text-muted);
+}
+
+.warning-block {
+  border: 1px solid rgba(167, 96, 26, 0.35);
+  background: rgba(247, 182, 92, 0.16);
+  border-radius: 12px;
+  padding: 0.55rem 0.7rem;
+  margin-bottom: 0.8rem;
+}
+
+.warning-block p {
+  margin: 0;
+  color: #674213;
+  font-size: 0.9rem;
+}
+
+.warning-block p + p {
+  margin-top: 0.35rem;
+}
+
+.table-wrap {
+  margin-top: 0.75rem;
+  overflow: auto;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  max-height: 460px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+th,
+td {
+  padding: 0.52rem 0.55rem;
+  border-bottom: 1px solid rgba(35, 35, 44, 0.08);
+  text-align: left;
+  white-space: nowrap;
+}
+
+th {
+  background: #fbf6ef;
+  font-weight: 600;
+}
+
+tbody tr:nth-child(2n) {
+  background: rgba(255, 255, 255, 0.53);
 }
 
 @media (max-width: 880px) {
