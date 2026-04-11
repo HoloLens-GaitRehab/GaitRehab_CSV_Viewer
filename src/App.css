@@ -168,6 +168,26 @@ h1 {
   background: #fff;
 }
 
+.range-row {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.range-row label,
+.range-row span {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.range-row input {
+  width: 5rem;
+  padding: 0.3rem 0.45rem;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+}
+
 .error-text {
   margin: 0.4rem 0 0;
   color: #8e1c2c;

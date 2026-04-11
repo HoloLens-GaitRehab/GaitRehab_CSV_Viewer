@@ -56,6 +56,8 @@ function App() {
   const [isParsing, setIsParsing] = useState(false)
   const [parseError, setParseError] = useState<string | null>(null)
   const [selectedFileName, setSelectedFileName] = useState('all')
+  const [startRowInput, setStartRowInput] = useState('1')
+  const [endRowInput, setEndRowInput] = useState('40')
 
   const fileOptions = ['all']
   for (const file of parsedFiles) {
@@ -321,6 +323,28 @@ function App() {
                 </option>
               ))}
             </select>
+          </div>
+          <div className="range-row">
+            <label htmlFor="startRow">Rows:</label>
+            <input
+              id="startRow"
+              type="number"
+              min="1"
+              value={startRowInput}
+              onChange={(event) => {
+                setStartRowInput(event.target.value)
+              }}
+            />
+            <span>to</span>
+            <input
+              id="endRow"
+              type="number"
+              min="1"
+              value={endRowInput}
+              onChange={(event) => {
+                setEndRowInput(event.target.value)
+              }}
+            />
           </div>
           {parseError && <p className="error-text">{parseError}</p>}
         </article>
