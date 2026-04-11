@@ -55,13 +55,24 @@ function App() {
   const [parsedFiles, setParsedFiles] = useState<ParsedCsvFile[]>([])
   const [isParsing, setIsParsing] = useState(false)
   const [parseError, setParseError] = useState<string | null>(null)
+  const [selectedFileName, setSelectedFileName] = useState('all')
+
+  const fileOptions = ['all']
+  for (const file of parsedFiles) {
+    fileOptions.push(file.fileName)
+  }
+
+  let filesToUse = parsedFiles
+  if (selectedFileName !== 'all') {
+    filesToUse = parsedFiles.filter((file) => file.fileName === selectedFileName)
+  }
 
   const allHeaders: string[] = []
   const allRows: PreviewRow[] = []
   const parsingWarnings: string[] = []
   let totalRows = 0
 
-  for (const file of parsedFiles) {
+  for (const file of filesToUse) {
     totalRows += file.rows.length
 
     for (const warning of file.warnings) {
@@ -162,6 +173,7 @@ function App() {
     try {
       const nextParsed = await Promise.all(csvFiles.map(parseCsvFile))
       setParsedFiles(nextParsed)
+      setSelectedFileName('all')
     } catch {
       setParsedFiles([])
       setParseError('Unable to parse the selected files.')
@@ -294,6 +306,22 @@ function App() {
             Files: <strong>{parsedFiles.length}</strong> | Rows:{' '}
             <strong>{totalRows}</strong>
           </p>
+          <div className="filter-row">
+            <label htmlFor="fileFilter">File filter:</label>
+            <select
+              id="fileFilter"
+              value={selectedFileName}
+              onChange={(event) => {
+                setSelectedFileName(event.target.value)
+              }}
+            >
+              {fileOptions.map((fileName) => (
+                <option key={fileName} value={fileName}>
+                  {fileName === 'all' ? 'All files' : fileName}
+                </option>
+              ))}
+            </select>
+          </div>
           {parseError && <p className="error-text">{parseError}</p>}
         </article>
 
