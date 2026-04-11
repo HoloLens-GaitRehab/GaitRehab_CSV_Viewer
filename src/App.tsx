@@ -96,7 +96,31 @@ function App() {
   }
 
   const previewHeaders = ['source_file', ...allHeaders]
-  const previewRows = allRows.slice(0, 40)
+
+  let startRow = Number.parseInt(startRowInput, 10)
+  let endRow = Number.parseInt(endRowInput, 10)
+
+  if (Number.isNaN(startRow) || startRow < 1) {
+    startRow = 1
+  }
+
+  if (Number.isNaN(endRow) || endRow < 1) {
+    endRow = 40
+  }
+
+  if (endRow < startRow) {
+    endRow = startRow
+  }
+
+  if (endRow > allRows.length) {
+    endRow = allRows.length
+  }
+
+  const rowStartIndex = startRow - 1
+  const rowEndIndex = endRow
+  const rowsInRange = allRows.slice(rowStartIndex, rowEndIndex)
+
+  const previewRows = rowsInRange.slice(0, 40)
 
   const missingColumns = expectedColumns.filter(
     (column) => !allHeaders.includes(column),
@@ -111,8 +135,8 @@ function App() {
 
   const chartData: ChartRow[] = []
 
-  for (let index = 0; index < allRows.length; index += 1) {
-    const row = allRows[index]
+  for (let index = 0; index < rowsInRange.length; index += 1) {
+    const row = rowsInRange[index]
 
     const distance = getNumberFromKeys(row, ['distance'])
     if (distance !== null) {
@@ -142,7 +166,7 @@ function App() {
 
     if (chartData.length < 40) {
       chartData.push({
-        row: `${index + 1}`,
+        row: `${startRow + index}`,
         speed: avgSpeed,
         onCourse,
         offCourse,
@@ -307,6 +331,10 @@ function App() {
           <p className="upload-meta">
             Files: <strong>{parsedFiles.length}</strong> | Rows:{' '}
             <strong>{totalRows}</strong>
+          </p>
+          <p className="upload-meta">
+            Using row range: <strong>{startRow}</strong> to <strong>{endRow}</strong>{' '}
+            ({rowsInRange.length} rows)
           </p>
           <div className="filter-row">
             <label htmlFor="fileFilter">File filter:</label>
