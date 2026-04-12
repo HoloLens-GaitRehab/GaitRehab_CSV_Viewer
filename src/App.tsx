@@ -265,99 +265,6 @@ function App() {
         </p>
       </header>
 
-      <section className="summary-grid">
-        <article className="summary-card">
-          <p>Total Distance</p>
-          <strong>{totalDistance.toFixed(3)} m</strong>
-        </article>
-        <article className="summary-card">
-          <p>Average Speed</p>
-          <strong>{averageSpeed.toFixed(3)} m/s</strong>
-        </article>
-        <article className="summary-card">
-          <p>On-Course Average</p>
-          <strong>{onCourseAverage.toFixed(2)}%</strong>
-        </article>
-        <article className="summary-card">
-          <p>Max Drift</p>
-          <strong>{maxDrift.toFixed(3)}</strong>
-        </article>
-      </section>
-
-      <section className="charts-grid">
-        <article className="chart-card">
-          <h3>{mainChartTitle}</h3>
-          {!hasMainChartData ? (
-            <p className="empty-message">No numeric values available yet.</p>
-          ) : (
-            <div className="chart-wrap">
-              <ResponsiveContainer width="100%" height={240}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="row" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey={mainChartMetric}
-                    stroke={mainChartColor}
-                    strokeWidth={2}
-                    dot={false}
-                    connectNulls
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </article>
-
-        <article className="chart-card">
-          <h3>On Course vs Off Course %</h3>
-          {chartData.every((item) => item.onCourse === null) ? (
-            <p className="empty-message">No numeric values available yet.</p>
-          ) : (
-            <div className="chart-wrap">
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="row" />
-                  <YAxis domain={[0, 100]} />
-                  <Tooltip />
-                  <Bar dataKey="onCourse" fill="#4ea16d" />
-                  <Bar dataKey="offCourse" fill="#d57b57" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </article>
-
-        <article className="chart-card chart-card-wide">
-          <h3>Drift Trend</h3>
-          {chartData.every((item) => item.drift === null) ? (
-            <p className="empty-message">No numeric values available yet.</p>
-          ) : (
-            <div className="chart-wrap">
-              <ResponsiveContainer width="100%" height={240}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="row" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="drift"
-                    stroke="#6a6ad2"
-                    strokeWidth={2}
-                    dot={false}
-                    connectNulls
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </article>
-      </section>
-
       <section className="card-grid">
         <article className="panel upload-panel">
           <h2>1. Upload CSV</h2>
@@ -500,6 +407,99 @@ function App() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </article>
+      </section>
+
+      <section className="summary-grid">
+        <article className="summary-card">
+          <p>Total Distance</p>
+          <strong>{totalDistance.toFixed(3)} m</strong>
+        </article>
+        <article className="summary-card">
+          <p>Average Speed</p>
+          <strong>{averageSpeed.toFixed(3)} m/s</strong>
+        </article>
+        <article className="summary-card">
+          <p>On-Course Average</p>
+          <strong>{onCourseAverage.toFixed(2)}%</strong>
+        </article>
+        <article className="summary-card">
+          <p>Max Drift</p>
+          <strong>{maxDrift.toFixed(3)}</strong>
+        </article>
+      </section>
+
+      <section className="charts-grid">
+        <article className="chart-card">
+          <h3>{mainChartTitle}</h3>
+          {!hasMainChartData ? (
+            <p className="empty-message">No numeric values available yet.</p>
+          ) : (
+            <div className="chart-wrap">
+              <ResponsiveContainer width="100%" height={240}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="row" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey={mainChartMetric}
+                    stroke={mainChartColor}
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </article>
+
+        <article className="chart-card">
+          <h3>On Course vs Off Course %</h3>
+          {chartData.every((item) => item.onCourse === null) ? (
+            <p className="empty-message">No numeric values available yet.</p>
+          ) : (
+            <div className="chart-wrap">
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="row" />
+                  <YAxis domain={[0, 100]} />
+                  <Tooltip />
+                  <Bar dataKey="onCourse" fill="#4ea16d" />
+                  <Bar dataKey="offCourse" fill="#d57b57" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </article>
+
+        <article className="chart-card chart-card-wide">
+          <h3>Drift Trend</h3>
+          {chartData.every((item) => item.drift === null) ? (
+            <p className="empty-message">No numeric values available yet.</p>
+          ) : (
+            <div className="chart-wrap">
+              <ResponsiveContainer width="100%" height={240}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="row" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="drift"
+                    stroke="#6a6ad2"
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           )}
         </article>
