@@ -66,6 +66,13 @@ function App() {
   const [endRowInput, setEndRowInput] = useState('40')
   const [selectedMetric, setSelectedMetric] = useState<MetricKey>('speed')
 
+  const metricOptions: { key: MetricKey; label: string }[] = [
+    { key: 'speed', label: 'Speed' },
+    { key: 'onCourse', label: 'On Course %' },
+    { key: 'offCourse', label: 'Off Course %' },
+    { key: 'drift', label: 'Drift' },
+  ]
+
   const fileOptions = ['all']
   for (const file of parsedFiles) {
     fileOptions.push(file.fileName)
@@ -385,20 +392,26 @@ function App() {
               ))}
             </select>
           </div>
-          <div className="filter-row">
-            <label htmlFor="metricFilter">Main chart metric:</label>
-            <select
-              id="metricFilter"
-              value={selectedMetric}
-              onChange={(event) => {
-                setSelectedMetric(event.target.value as MetricKey)
-              }}
-            >
-              <option value="speed">Speed</option>
-              <option value="onCourse">On Course %</option>
-              <option value="offCourse">Off Course %</option>
-              <option value="drift">Drift</option>
-            </select>
+          <div className="metric-chip-row">
+            <p>Main chart metric:</p>
+            <div className="metric-chip-list">
+              {metricOptions.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  className={
+                    selectedMetric === option.key
+                      ? 'metric-chip metric-chip-active'
+                      : 'metric-chip'
+                  }
+                  onClick={() => {
+                    setSelectedMetric(option.key)
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="range-row">
             <label htmlFor="startRow">Rows:</label>
