@@ -58,6 +58,7 @@ function App() {
   const [selectedFileName, setSelectedFileName] = useState('all')
   const [startRowInput, setStartRowInput] = useState('1')
   const [endRowInput, setEndRowInput] = useState('40')
+  const [selectedMetric, setSelectedMetric] = useState('speed')
 
   const fileOptions = ['all']
   for (const file of parsedFiles) {
@@ -350,6 +351,21 @@ function App() {
                   {fileName === 'all' ? 'All files' : fileName}
                 </option>
               ))}
+            </select>
+          </div>
+          <div className="filter-row">
+            <label htmlFor="metricFilter">Main chart metric:</label>
+            <select
+              id="metricFilter"
+              value={selectedMetric}
+              onChange={(event) => {
+                setSelectedMetric(event.target.value)
+              }}
+            >
+              <option value="speed">Speed</option>
+              <option value="onCourse">On Course %</option>
+              <option value="offCourse">Off Course %</option>
+              <option value="drift">Drift</option>
             </select>
           </div>
           <div className="range-row">
