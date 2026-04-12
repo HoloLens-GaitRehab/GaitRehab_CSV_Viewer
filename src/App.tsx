@@ -25,6 +25,8 @@ type ChartRow = {
   drift: number | null
 }
 
+type MetricKey = 'speed' | 'onCourse' | 'offCourse' | 'drift'
+
 function getNumber(row: PreviewRow, key: string): number | null {
   const rawValue = row[key]
 
@@ -51,6 +53,10 @@ function getNumberFromKeys(row: PreviewRow, keys: string[]): number | null {
   return null
 }
 
+function getMetricValue(row: ChartRow, metric: MetricKey): number | null {
+  return row[metric]
+}
+
 function App() {
   const [parsedFiles, setParsedFiles] = useState<ParsedCsvFile[]>([])
   const [isParsing, setIsParsing] = useState(false)
@@ -58,7 +64,7 @@ function App() {
   const [selectedFileName, setSelectedFileName] = useState('all')
   const [startRowInput, setStartRowInput] = useState('1')
   const [endRowInput, setEndRowInput] = useState('40')
-  const [selectedMetric, setSelectedMetric] = useState('speed')
+  const [selectedMetric, setSelectedMetric] = useState<MetricKey>('speed')
 
   const fileOptions = ['all']
   for (const file of parsedFiles) {
@@ -179,6 +185,32 @@ function App() {
   const averageSpeed = speedCount > 0 ? speedTotal / speedCount : 0
   const onCourseAverage = onCourseCount > 0 ? onCourseTotal / onCourseCount : 0
 
+  let mainChartMetric: MetricKey = 'speed'
+  let mainChartTitle = 'Average Speed (first 40 rows)'
+  let mainChartColor = '#cc5c1f'
+
+  if (selectedMetric === 'onCourse') {
+    mainChartMetric = 'onCourse'
+    mainChartTitle = 'On Course % (first 40 rows)'
+    mainChartColor = '#2f8f55'
+  }
+
+  if (selectedMetric === 'offCourse') {
+    mainChartMetric = 'offCourse'
+    mainChartTitle = 'Off Course % (first 40 rows)'
+    mainChartColor = '#d57b57'
+  }
+
+  if (selectedMetric === 'drift') {
+    mainChartMetric = 'drift'
+    mainChartTitle = 'Drift (first 40 rows)'
+    mainChartColor = '#6a6ad2'
+  }
+
+  const hasMainChartData = chartData.some(
+    (row) => getMetricValue(row, mainChartMetric) !== null,
+  )
+
   const handleFileUpload = async (fileList: FileList | null): Promise<void> => {
     if (!fileList) {
       return
@@ -241,8 +273,8 @@ function App() {
 
       <section className="charts-grid">
         <article className="chart-card">
-          <h3>Average Speed (first 40 rows)</h3>
-          {chartData.every((item) => item.speed === null) ? (
+          <h3>{mainChartTitle}</h3>
+          {!hasMainChartData ? (
             <p className="empty-message">No numeric values available yet.</p>
           ) : (
             <div className="chart-wrap">
@@ -254,8 +286,8 @@ function App() {
                   <Tooltip />
                   <Line
                     type="monotone"
-                    dataKey="speed"
-                    stroke="#cc5c1f"
+                    dataKey={mainChartMetric}
+                    stroke={mainChartColor}
                     strokeWidth={2}
                     dot={false}
                     connectNulls
@@ -359,7 +391,7 @@ function App() {
               id="metricFilter"
               value={selectedMetric}
               onChange={(event) => {
-                setSelectedMetric(event.target.value)
+                setSelectedMetric(event.target.value as MetricKey)
               }}
             >
               <option value="speed">Speed</option>
