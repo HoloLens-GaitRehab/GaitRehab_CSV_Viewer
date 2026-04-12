@@ -168,6 +168,40 @@ h1 {
   background: #fff;
 }
 
+.metric-chip-row {
+  margin-top: 0.6rem;
+}
+
+.metric-chip-row p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.metric-chip-list {
+  margin-top: 0.35rem;
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.metric-chip {
+  border: 1px solid var(--panel-border);
+  background: #fff;
+  color: #333;
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.metric-chip-active {
+  border-color: #c35b22;
+  background: #ffe5d6;
+  color: #7a2e08;
+  font-weight: 600;
+}
+
 .range-row {
   margin-top: 0.5rem;
   display: flex;
