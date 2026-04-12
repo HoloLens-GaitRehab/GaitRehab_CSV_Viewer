@@ -250,6 +250,12 @@ function App() {
 
   return (
     <main className="page-shell">
+      <div className="moving-waves" aria-hidden="true">
+        <div className="wave-layer wave-layer-one"></div>
+        <div className="wave-layer wave-layer-two"></div>
+        <div className="wave-layer wave-layer-three"></div>
+      </div>
+
       <header className="hero-header">
         <p className="eyebrow">Gait Rehab Analytics</p>
         <h1>Dashboard</h1>

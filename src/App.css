@@ -1,11 +1,86 @@
 .page-shell {
+  position: relative;
+  z-index: 1;
   width: min(1120px, 100%);
   margin: 0 auto;
   padding: 3.5rem 1.2rem 4rem;
   box-sizing: border-box;
 }
 
+.moving-waves {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.wave-layer {
+  position: absolute;
+  left: -20%;
+  width: 140%;
+  border-radius: 46%;
+  opacity: 0.5;
+  will-change: transform;
+}
+
+.wave-layer-one {
+  height: 280px;
+  bottom: -160px;
+  background: linear-gradient(90deg, rgba(89, 169, 206, 0.36), rgba(105, 200, 191, 0.3));
+  animation: waveSlideA 15s linear infinite;
+}
+
+.wave-layer-two {
+  height: 250px;
+  bottom: -178px;
+  background: linear-gradient(90deg, rgba(66, 136, 202, 0.22), rgba(68, 169, 214, 0.26));
+  animation: waveSlideB 22s linear infinite;
+}
+
+.wave-layer-three {
+  height: 320px;
+  bottom: -235px;
+  background: linear-gradient(90deg, rgba(77, 122, 194, 0.18), rgba(141, 198, 228, 0.2));
+  animation: waveSlideC 28s linear infinite;
+}
+
+@keyframes waveSlideA {
+  from {
+    transform: translateX(0) translateY(0) rotate(0deg);
+  }
+  to {
+    transform: translateX(-12%) translateY(8px) rotate(5deg);
+  }
+}
+
+@keyframes waveSlideB {
+  from {
+    transform: translateX(0) translateY(0) rotate(0deg);
+  }
+  to {
+    transform: translateX(-16%) translateY(-10px) rotate(-4deg);
+  }
+}
+
+@keyframes waveSlideC {
+  from {
+    transform: translateX(0) translateY(0) rotate(0deg);
+  }
+  to {
+    transform: translateX(-10%) translateY(10px) rotate(3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wave-layer {
+    animation: none;
+  }
+}
+
 .hero-header {
+  position: relative;
+  z-index: 1;
   padding: 2rem;
   border-radius: 20px;
   border: 1px solid var(--panel-border);
@@ -49,6 +124,8 @@ h1 {
 }
 
 .summary-card {
+  position: relative;
+  z-index: 1;
   grid-column: span 3;
   border-radius: 14px;
   border: 1px solid var(--panel-border);
@@ -78,6 +155,8 @@ h1 {
 }
 
 .chart-card {
+  position: relative;
+  z-index: 1;
   grid-column: span 6;
   border: 1px solid var(--panel-border);
   border-radius: 18px;
@@ -101,6 +180,8 @@ h1 {
 }
 
 .panel {
+  position: relative;
+  z-index: 1;
   border: 1px solid var(--panel-border);
   border-radius: 18px;
   background: var(--panel-bg);
