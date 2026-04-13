@@ -135,8 +135,9 @@ function App() {
   const rowEndIndex = endRow
   const rowsInRange = allRows.slice(rowStartIndex, rowEndIndex)
 
-  const previewRows = rowsInRange.slice(0, 40)
   const anomalyInsights = buildAnomalyInsights(rowsInRange, startRow)
+  const previewRows = rowsInRange.slice(0, 40)
+  const previewAnomalies = anomalyInsights.slice(0, 40)
 
   let highRiskCount = 0
   for (const insight of anomalyInsights) {
@@ -401,19 +402,29 @@ function App() {
               <table>
                 <thead>
                   <tr>
+                    <th>anomaly_risk</th>
+                    <th>anomaly_score</th>
+                    <th>anomaly_reason</th>
                     {previewHeaders.map((header) => (
                       <th key={header}>{header}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {previewRows.map((row, index) => (
+                  {previewRows.map((row, index) => {
+                    const anomaly = previewAnomalies[index]
+
+                    return (
                     <tr key={`${row.source_file}-${index}`}>
+                      <td>{anomaly ? anomaly.risk : '-'}</td>
+                      <td>{anomaly ? anomaly.score.toFixed(1) : '-'}</td>
+                      <td>{anomaly ? anomaly.reasons[0] || '-' : '-'}</td>
                       {previewHeaders.map((header) => (
                         <td key={`${header}-${index}`}>{row[header] || '-'}</td>
                       ))}
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
