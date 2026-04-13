@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { buildAnomalyInsights } from './lib/anomaly'
 import { parseCsvFile } from './lib/csv'
 import type { ParsedCsvFile } from './types/sessionData'
 import { expectedColumns } from './types/sessionData'
@@ -135,6 +136,14 @@ function App() {
   const rowsInRange = allRows.slice(rowStartIndex, rowEndIndex)
 
   const previewRows = rowsInRange.slice(0, 40)
+  const anomalyInsights = buildAnomalyInsights(rowsInRange, startRow)
+
+  let highRiskCount = 0
+  for (const insight of anomalyInsights) {
+    if (insight.risk === 'High') {
+      highRiskCount += 1
+    }
+  }
 
   const missingColumns = expectedColumns.filter(
     (column) => !allHeaders.includes(column),
@@ -428,6 +437,10 @@ function App() {
         <article className="summary-card">
           <p>Max Drift</p>
           <strong>{maxDrift.toFixed(3)}</strong>
+        </article>
+        <article className="summary-card">
+          <p>High Risk Rows</p>
+          <strong>{highRiskCount}</strong>
         </article>
       </section>
 
