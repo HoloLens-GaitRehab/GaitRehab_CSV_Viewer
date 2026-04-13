@@ -416,7 +416,23 @@ function App() {
 
                     return (
                     <tr key={`${row.source_file}-${index}`}>
-                      <td>{anomaly ? anomaly.risk : '-'}</td>
+                      <td>
+                        {anomaly ? (
+                          <span
+                            className={
+                              anomaly.risk === 'High'
+                                ? 'risk-pill risk-pill-high'
+                                : anomaly.risk === 'Medium'
+                                  ? 'risk-pill risk-pill-medium'
+                                  : 'risk-pill risk-pill-low'
+                            }
+                          >
+                            {anomaly.risk}
+                          </span>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
                       <td>{anomaly ? anomaly.score.toFixed(1) : '-'}</td>
                       <td>{anomaly ? anomaly.reasons[0] || '-' : '-'}</td>
                       {previewHeaders.map((header) => (

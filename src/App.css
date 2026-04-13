@@ -393,6 +393,29 @@ tbody tr:nth-child(2n) {
   background: rgba(255, 255, 255, 0.53);
 }
 
+.risk-pill {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.risk-pill-low {
+  background: rgba(80, 172, 101, 0.2);
+  color: #1f6f35;
+}
+
+.risk-pill-medium {
+  background: rgba(255, 176, 86, 0.25);
+  color: #9b4f00;
+}
+
+.risk-pill-high {
+  background: rgba(230, 86, 86, 0.25);
+  color: #9a1f1f;
+}
+
 @media (max-width: 880px) {
   .summary-card,
   .chart-card,
