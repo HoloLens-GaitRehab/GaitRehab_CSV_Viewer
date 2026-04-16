@@ -32,8 +32,44 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-app.use(cors({ origin: true }));
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
+  : true;
+
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json({ limit: "5mb" }));
+
+function resolveSessionFilePath(rawFileName) {
+  const safeFileName = path.basename(rawFileName || "");
+  if (!safeFileName || safeFileName !== rawFileName) {
+    return null;
+  }
+
+  const fullPath = path.resolve(sessionsDir, safeFileName);
+  if (!fullPath.startsWith(sessionsDir)) {
+    return null;
+  }
+
+  return fullPath;
+}
+
+function listSessionFiles() {
+  const files = fs.readdirSync(sessionsDir);
+  return files
+    .filter((fileName) => fileName.toLowerCase().endsWith(".csv"))
+    .map((fileName) => {
+      const fullPath = path.resolve(sessionsDir, fileName);
+      const stats = fs.statSync(fullPath);
+      return {
+        id: fileName,
+        fileName,
+        size: stats.size,
+        createdAt: stats.birthtime.toISOString(),
+        updatedAt: stats.mtime.toISOString(),
+      };
+    })
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+}
 
 app.post("/api/sessions/upload", upload.single("file"), (req, res) => {
   if (!req.file) {
@@ -51,6 +87,42 @@ app.post("/api/sessions/upload", upload.single("file"), (req, res) => {
     originalName: req.file.originalname,
     size: req.file.size,
   });
+});
+
+app.get("/api/sessions", (_req, res) => {
+  const sessions = listSessionFiles();
+  res.json({
+    ok: true,
+    count: sessions.length,
+    sessions,
+  });
+});
+
+app.get("/api/sessions/:fileName", (req, res) => {
+  const filePath = resolveSessionFilePath(req.params.fileName);
+  if (!filePath || !fs.existsSync(filePath)) {
+    res.status(404).json({
+      ok: false,
+      error: "Session CSV not found",
+    });
+    return;
+  }
+
+  const csvContent = fs.readFileSync(filePath, "utf8");
+  res.type("text/csv").send(csvContent);
+});
+
+app.get("/api/sessions/:fileName/download", (req, res) => {
+  const filePath = resolveSessionFilePath(req.params.fileName);
+  if (!filePath || !fs.existsSync(filePath)) {
+    res.status(404).json({
+      ok: false,
+      error: "Session CSV not found",
+    });
+    return;
+  }
+
+  res.download(filePath, path.basename(filePath));
 });
 
 app.get("/api/health", (_req, res) => {
