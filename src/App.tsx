@@ -153,11 +153,26 @@ function App() {
   }
 
   let highRiskCount = 0
+  let mediumRiskCount = 0
+  let anomalyScoreTotal = 0
   for (const insight of anomalyInsights) {
+    anomalyScoreTotal += insight.score
+
     if (insight.risk === 'High') {
       highRiskCount += 1
     }
+
+    if (insight.risk === 'Medium') {
+      mediumRiskCount += 1
+    }
   }
+
+  const averageAnomalyScore =
+    anomalyInsights.length > 0 ? anomalyScoreTotal / anomalyInsights.length : 0
+
+  const topAnomalies = [...anomalyInsights]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
 
   const missingColumns = expectedColumns.filter(
     (column) => !allHeaders.includes(column),
@@ -519,6 +534,33 @@ function App() {
           <p>High Risk Rows</p>
           <strong>{highRiskCount}</strong>
         </article>
+        <article className="summary-card">
+          <p>Medium Risk Rows</p>
+          <strong>{mediumRiskCount}</strong>
+        </article>
+      </section>
+
+      <section className="panel anomaly-list-panel">
+        <h2>Top Anomaly Rows</h2>
+        {topAnomalies.length === 0 ? (
+          <p className="empty-message">No rows in range yet.</p>
+        ) : (
+          <ol className="top-anomaly-list">
+            {topAnomalies.map((item) => (
+              <li key={item.rowNumber}>
+                <strong>Row {item.rowNumber}</strong>
+                <span>
+                  Score {item.score.toFixed(1)} | {item.risk} risk
+                </span>
+                <span>{item.reasons[0] || 'No reason available'}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+        <p className="schema-meta">
+          Current mode: <strong>{detectorModeLabel}</strong> | Average anomaly
+          score: <strong>{averageAnomalyScore.toFixed(1)}</strong>
+        </p>
       </section>
 
       <section className="charts-grid">
