@@ -71,3 +71,31 @@ export default defineConfig([
   },
 ])
 ```
+
+## Anomaly Detection (FYP Notes)
+
+This dashboard has a lightweight anomaly detector so it can run directly in the browser.
+
+### Detector modes
+
+- `Z-Score only`
+  - Uses feature statistics (mean and standard deviation).
+  - A row gets a higher score if it is far from normal values.
+- `K-Means only`
+  - Uses a simple unsupervised clustering model (k=3).
+  - A row gets a higher score when it is far from its cluster center.
+- `Hybrid (recommended)`
+  - Combines both methods:
+  - `score = 0.45 * zScore + 0.55 * kMeansScore`
+
+### Sensitivity
+
+- The sensitivity slider changes the `Medium` and `High` risk thresholds.
+- Higher sensitivity means more rows are flagged.
+- Lower sensitivity means only stronger anomalies are flagged.
+
+### Explainability shown in UI
+
+- `anomaly_score` and `anomaly_risk` are shown in the preview table.
+- A short reason is shown for each row (for example, unusual speed or off-course behavior).
+- The dashboard also lists the top anomaly rows in the selected row range.
