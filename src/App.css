@@ -249,6 +249,48 @@ h1 {
   background: #fff;
 }
 
+.detector-row {
+  margin-top: 0.6rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.detector-row label {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.detector-row select {
+  padding: 0.3rem 0.45rem;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: #fff;
+}
+
+.sensitivity-row {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.sensitivity-row label {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.sensitivity-row input[type='range'] {
+  width: 10.5rem;
+  accent-color: #ce6e30;
+}
+
+.sensitivity-row strong {
+  min-width: 2rem;
+  color: #66300f;
+  font-size: 0.9rem;
+}
+
 .metric-chip-row {
   margin-top: 0.6rem;
 }

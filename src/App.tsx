@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { buildAnomalyInsights } from './lib/anomaly'
+import { buildAnomalyInsights, type DetectorMode } from './lib/anomaly'
 import { parseCsvFile } from './lib/csv'
 import type { ParsedCsvFile } from './types/sessionData'
 import { expectedColumns } from './types/sessionData'
@@ -66,6 +66,8 @@ function App() {
   const [startRowInput, setStartRowInput] = useState('1')
   const [endRowInput, setEndRowInput] = useState('40')
   const [selectedMetric, setSelectedMetric] = useState<MetricKey>('speed')
+  const [detectorMode, setDetectorMode] = useState<DetectorMode>('hybrid')
+  const [anomalySensitivity, setAnomalySensitivity] = useState(55)
 
   const metricOptions: { key: MetricKey; label: string }[] = [
     { key: 'speed', label: 'Speed' },
@@ -135,9 +137,20 @@ function App() {
   const rowEndIndex = endRow
   const rowsInRange = allRows.slice(rowStartIndex, rowEndIndex)
 
-  const anomalyInsights = buildAnomalyInsights(rowsInRange, startRow)
+  const anomalyInsights = buildAnomalyInsights(rowsInRange, startRow, {
+    mode: detectorMode,
+    sensitivity: anomalySensitivity,
+  })
   const previewRows = rowsInRange.slice(0, 40)
   const previewAnomalies = anomalyInsights.slice(0, 40)
+
+  let detectorModeLabel = 'Hybrid (Z-Score + K-Means)'
+  if (detectorMode === 'kmeans') {
+    detectorModeLabel = 'K-Means only'
+  }
+  if (detectorMode === 'zscore') {
+    detectorModeLabel = 'Z-Score only'
+  }
 
   let highRiskCount = 0
   for (const insight of anomalyInsights) {
@@ -336,6 +349,43 @@ function App() {
               ))}
             </div>
           </div>
+          <div className="detector-row">
+            <label htmlFor="detectorMode">Anomaly detector:</label>
+            <select
+              id="detectorMode"
+              value={detectorMode}
+              onChange={(event) => {
+                setDetectorMode(event.target.value as DetectorMode)
+              }}
+            >
+              <option value="hybrid">Hybrid (recommended)</option>
+              <option value="kmeans">K-Means only</option>
+              <option value="zscore">Z-Score only</option>
+            </select>
+          </div>
+          <div className="sensitivity-row">
+            <label htmlFor="anomalySensitivity">Sensitivity:</label>
+            <input
+              id="anomalySensitivity"
+              type="range"
+              min="20"
+              max="90"
+              step="1"
+              value={anomalySensitivity}
+              onChange={(event) => {
+                const nextValue = Number.parseInt(event.target.value, 10)
+                if (Number.isNaN(nextValue)) {
+                  return
+                }
+
+                setAnomalySensitivity(nextValue)
+              }}
+            />
+            <strong>{anomalySensitivity}</strong>
+          </div>
+          <p className="upload-meta">
+            Anomaly mode: <strong>{detectorModeLabel}</strong>
+          </p>
           <div className="range-row">
             <label htmlFor="startRow">Rows:</label>
             <input
@@ -434,7 +484,7 @@ function App() {
                         )}
                       </td>
                       <td>{anomaly ? anomaly.score.toFixed(1) : '-'}</td>
-                      <td>{anomaly ? anomaly.reasons[0] || '-' : '-'}</td>
+                      <td>{anomaly ? anomaly.reasons.join(' | ') || '-' : '-'}</td>
                       {previewHeaders.map((header) => (
                         <td key={`${header}-${index}`}>{row[header] || '-'}</td>
                       ))}
