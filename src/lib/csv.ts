@@ -86,6 +86,13 @@ export const canonicalizeHeader = (header: string): string => {
 
 export const parseCsvFile = async (file: File): Promise<ParsedCsvFile> => {
   const text = await file.text()
+  return parseCsvText(file.name, text)
+}
+
+export const parseCsvText = (
+  fileName: string,
+  text: string,
+): ParsedCsvFile => {
 
   const result: ParseResult<Record<string, string>> = Papa.parse(text, {
     header: true,
@@ -111,7 +118,7 @@ export const parseCsvFile = async (file: File): Promise<ParsedCsvFile> => {
   }
 
   return {
-    fileName: file.name,
+    fileName,
     headers,
     rows,
     warnings,

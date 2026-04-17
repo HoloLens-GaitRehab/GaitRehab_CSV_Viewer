@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Bar,
   BarChart,
@@ -11,7 +11,7 @@ import {
   YAxis,
 } from 'recharts'
 import { buildAnomalyInsights, type DetectorMode } from './lib/anomaly'
-import { parseCsvFile } from './lib/csv'
+import { parseCsvFile, parseCsvText } from './lib/csv'
 import type { ParsedCsvFile } from './types/sessionData'
 import { expectedColumns } from './types/sessionData'
 import './App.css'
@@ -27,6 +27,22 @@ type ChartRow = {
 }
 
 type MetricKey = 'speed' | 'onCourse' | 'offCourse' | 'drift'
+
+type BackendSession = {
+  id: string
+  fileName: string
+  size: number
+  createdAt: string
+  updatedAt: string
+}
+
+const defaultBackendApiUrl =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() ||
+  'http://localhost:4000'
+
+function normalizeApiBaseUrl(url: string): string {
+  return url.trim().replace(/\/+$/, '')
+}
 
 function getNumber(row: PreviewRow, key: string): number | null {
   const rawValue = row[key]
@@ -62,6 +78,13 @@ function App() {
   const [parsedFiles, setParsedFiles] = useState<ParsedCsvFile[]>([])
   const [isParsing, setIsParsing] = useState(false)
   const [parseError, setParseError] = useState<string | null>(null)
+  const [backendApiUrl, setBackendApiUrl] = useState(defaultBackendApiUrl)
+  const [backendSessions, setBackendSessions] = useState<BackendSession[]>([])
+  const [selectedBackendSessionFileName, setSelectedBackendSessionFileName] =
+    useState('')
+  const [isLoadingBackendSessions, setIsLoadingBackendSessions] = useState(false)
+  const [isImportingBackendSessions, setIsImportingBackendSessions] = useState(false)
+  const [backendStatus, setBackendStatus] = useState<string | null>(null)
   const [selectedFileName, setSelectedFileName] = useState('all')
   const [startRowInput, setStartRowInput] = useState('1')
   const [endRowInput, setEndRowInput] = useState('40')
@@ -256,6 +279,107 @@ function App() {
     (row) => getMetricValue(row, mainChartMetric) !== null,
   )
 
+  const refreshBackendSessions = async (): Promise<void> => {
+    const apiRoot = normalizeApiBaseUrl(backendApiUrl)
+    if (!apiRoot) {
+      setParseError('Enter a backend API URL first.')
+      return
+    }
+
+    setIsLoadingBackendSessions(true)
+    setParseError(null)
+    setBackendStatus(null)
+
+    try {
+      const response = await fetch(`${apiRoot}/api/sessions`)
+      if (!response.ok) {
+        throw new Error(`Backend returned ${response.status}.`)
+      }
+
+      const payload = (await response.json()) as {
+        sessions?: BackendSession[]
+      }
+
+      const sessions = Array.isArray(payload.sessions) ? payload.sessions : []
+      setBackendSessions(sessions)
+
+      if (sessions.length > 0) {
+        setSelectedBackendSessionFileName(sessions[0].fileName)
+      } else {
+        setSelectedBackendSessionFileName('')
+      }
+
+      setBackendStatus(`Found ${sessions.length} session file(s) on backend.`)
+    } catch (error) {
+      setBackendSessions([])
+      setSelectedBackendSessionFileName('')
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to load backend sessions.'
+      setParseError(`Backend fetch failed. ${message}`)
+    } finally {
+      setIsLoadingBackendSessions(false)
+    }
+  }
+
+  const importBackendSessions = async (
+    fileNames: string[],
+    importLabel: string,
+  ): Promise<void> => {
+    if (fileNames.length === 0) {
+      setParseError('No backend sessions available to import.')
+      return
+    }
+
+    const apiRoot = normalizeApiBaseUrl(backendApiUrl)
+    if (!apiRoot) {
+      setParseError('Enter a backend API URL first.')
+      return
+    }
+
+    setIsImportingBackendSessions(true)
+    setParseError(null)
+    setBackendStatus(null)
+
+    try {
+      const fetchedFiles = await Promise.all(
+        fileNames.map(async (fileName) => {
+          const response = await fetch(
+            `${apiRoot}/api/sessions/${encodeURIComponent(fileName)}`,
+          )
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch ${fileName} (${response.status})`)
+          }
+
+          const csvText = await response.text()
+          return parseCsvText(fileName, csvText)
+        }),
+      )
+
+      setParsedFiles(fetchedFiles)
+      setSelectedFileName('all')
+      setStartRowInput('1')
+      setEndRowInput('40')
+      setBackendStatus(
+        `${importLabel}: loaded ${fetchedFiles.length} file(s) from backend.`,
+      )
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to import backend sessions.'
+      setParseError(message)
+    } finally {
+      setIsImportingBackendSessions(false)
+    }
+  }
+
+  useEffect(() => {
+    void refreshBackendSessions()
+  }, [])
+
   const handleFileUpload = async (fileList: FileList | null): Promise<void> => {
     if (!fileList) {
       return
@@ -298,14 +422,14 @@ function App() {
         <p className="eyebrow">Gait Rehab Analytics</p>
         <h1>Dashboard</h1>
         <p className="hero-copy">
-          Upload one or more gait CSV files to generate session summaries and
-          visualizations.
+          Upload gait CSV files or load them straight from your backend to show
+          live HoloLens sessions.
         </p>
       </header>
 
       <section className="card-grid">
         <article className="panel upload-panel">
-          <h2>1. Upload CSV</h2>
+          <h2>1. Load Session Data</h2>
           <p>Drag files here or use the file picker to load exported session data.</p>
           <label className="upload-button" aria-label="Upload session CSV files">
             {isParsing ? 'Parsing files...' : 'Choose CSV Files'}
@@ -319,6 +443,80 @@ function App() {
               }}
             />
           </label>
+          <div className="backend-load-box">
+            <p className="backend-load-title">Or load from backend API</p>
+            <div className="backend-url-row">
+              <label htmlFor="backendApiUrl">Backend URL</label>
+              <input
+                id="backendApiUrl"
+                type="text"
+                value={backendApiUrl}
+                onChange={(event) => {
+                  setBackendApiUrl(event.target.value)
+                }}
+                placeholder="http://localhost:4000"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  void refreshBackendSessions()
+                }}
+                disabled={isLoadingBackendSessions}
+              >
+                {isLoadingBackendSessions ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
+            <div className="backend-actions-row">
+              <select
+                value={selectedBackendSessionFileName}
+                onChange={(event) => {
+                  setSelectedBackendSessionFileName(event.target.value)
+                }}
+                disabled={backendSessions.length === 0}
+              >
+                {backendSessions.length === 0 ? (
+                  <option value="">No backend sessions found</option>
+                ) : (
+                  backendSessions.map((session) => (
+                    <option key={session.id} value={session.fileName}>
+                      {session.fileName}
+                    </option>
+                  ))
+                )}
+              </select>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!selectedBackendSessionFileName) {
+                    setParseError('Select a backend session first.')
+                    return
+                  }
+
+                  void importBackendSessions(
+                    [selectedBackendSessionFileName],
+                    'Selected import',
+                  )
+                }}
+                disabled={isImportingBackendSessions || !selectedBackendSessionFileName}
+              >
+                {isImportingBackendSessions ? 'Loading...' : 'Load Selected'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const fileNames = backendSessions.map((session) => session.fileName)
+                  void importBackendSessions(fileNames, 'Bulk import')
+                }}
+                disabled={isImportingBackendSessions || backendSessions.length === 0}
+              >
+                Load All
+              </button>
+            </div>
+            <p className="upload-meta">
+              Backend sessions: <strong>{backendSessions.length}</strong>
+            </p>
+            {backendStatus && <p className="backend-status">{backendStatus}</p>}
+          </div>
           <p className="upload-meta">
             Files: <strong>{parsedFiles.length}</strong> | Rows:{' '}
             <strong>{totalRows}</strong>
