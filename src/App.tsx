@@ -10,54 +10,18 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { buildAnomalyInsights, type DetectorMode } from './lib/anomaly'
+import { type DetectorMode } from './lib/anomaly'
 import { parseCsvFile } from './lib/csv'
+import { DataLoadPanel } from './components/DataLoadPanel'
 import { useBackendSessions } from './hooks/useBackendSessions'
+import {
+  metricOptions,
+  type MetricKey,
+  useSessionAnalytics,
+} from './hooks/useSessionAnalytics'
 import type { ParsedCsvFile } from './types/sessionData'
 import { expectedColumns } from './types/sessionData'
 import './App.css'
-
-type PreviewRow = Record<string, string>
-
-type ChartRow = {
-  row: string
-  speed: number | null
-  onCourse: number | null
-  offCourse: number | null
-  drift: number | null
-}
-
-type MetricKey = 'speed' | 'onCourse' | 'offCourse' | 'drift'
-
-function getNumber(row: PreviewRow, key: string): number | null {
-  const rawValue = row[key]
-
-  if (!rawValue) {
-    return null
-  }
-
-  const value = Number.parseFloat(rawValue)
-  if (Number.isNaN(value)) {
-    return null
-  }
-
-  return value
-}
-
-function getNumberFromKeys(row: PreviewRow, keys: string[]): number | null {
-  for (const key of keys) {
-    const value = getNumber(row, key)
-    if (value !== null) {
-      return value
-    }
-  }
-
-  return null
-}
-
-function getMetricValue(row: ChartRow, metric: MetricKey): number | null {
-  return row[metric]
-}
 
 function App() {
   const [parsedFiles, setParsedFiles] = useState<ParsedCsvFile[]>([])
@@ -91,192 +55,41 @@ function App() {
     },
   })
 
-  const metricOptions: { key: MetricKey; label: string }[] = [
-    { key: 'speed', label: 'Speed' },
-    { key: 'onCourse', label: 'On Course %' },
-    { key: 'offCourse', label: 'Off Course %' },
-    { key: 'drift', label: 'Drift' },
-  ]
-
-  const fileOptions = ['all']
-  for (const file of parsedFiles) {
-    fileOptions.push(file.fileName)
-  }
-
-  let filesToUse = parsedFiles
-  if (selectedFileName !== 'all') {
-    filesToUse = parsedFiles.filter((file) => file.fileName === selectedFileName)
-  }
-
-  const allHeaders: string[] = []
-  const allRows: PreviewRow[] = []
-  const parsingWarnings: string[] = []
-  let totalRows = 0
-
-  for (const file of filesToUse) {
-    totalRows += file.rows.length
-
-    for (const warning of file.warnings) {
-      parsingWarnings.push(`${file.fileName}: ${warning}`)
-    }
-
-    for (const header of file.headers) {
-      if (!allHeaders.includes(header)) {
-        allHeaders.push(header)
-      }
-    }
-
-    for (const row of file.rows) {
-      allRows.push({
-        source_file: file.fileName,
-        ...row,
-      })
-    }
-  }
-
-  const previewHeaders = ['source_file', ...allHeaders]
-
-  let startRow = Number.parseInt(startRowInput, 10)
-  let endRow = Number.parseInt(endRowInput, 10)
-
-  if (Number.isNaN(startRow) || startRow < 1) {
-    startRow = 1
-  }
-
-  if (Number.isNaN(endRow) || endRow < 1) {
-    endRow = 40
-  }
-
-  if (endRow < startRow) {
-    endRow = startRow
-  }
-
-  if (endRow > allRows.length) {
-    endRow = allRows.length
-  }
-
-  const rowStartIndex = startRow - 1
-  const rowEndIndex = endRow
-  const rowsInRange = allRows.slice(rowStartIndex, rowEndIndex)
-
-  const anomalyInsights = buildAnomalyInsights(rowsInRange, startRow, {
-    mode: detectorMode,
-    sensitivity: anomalySensitivity,
+  const {
+    fileOptions,
+    totalRows,
+    allHeadersCount,
+    parsingWarnings,
+    previewHeaders,
+    startRow,
+    endRow,
+    rowsInRange,
+    detectorModeLabel,
+    previewRows,
+    previewAnomalies,
+    missingColumns,
+    totalDistance,
+    averageSpeed,
+    onCourseAverage,
+    maxDrift,
+    highRiskCount,
+    mediumRiskCount,
+    topAnomalies,
+    averageAnomalyScore,
+    chartData,
+    mainChartTitle,
+    mainChartMetric,
+    mainChartColor,
+    hasMainChartData,
+  } = useSessionAnalytics({
+    parsedFiles,
+    selectedFileName,
+    startRowInput,
+    endRowInput,
+    selectedMetric,
+    detectorMode,
+    anomalySensitivity,
   })
-  const previewRows = rowsInRange.slice(0, 40)
-  const previewAnomalies = anomalyInsights.slice(0, 40)
-
-  let detectorModeLabel = 'Hybrid (Z-Score + K-Means)'
-  if (detectorMode === 'kmeans') {
-    detectorModeLabel = 'K-Means only'
-  }
-  if (detectorMode === 'zscore') {
-    detectorModeLabel = 'Z-Score only'
-  }
-
-  let highRiskCount = 0
-  let mediumRiskCount = 0
-  let anomalyScoreTotal = 0
-  for (const insight of anomalyInsights) {
-    anomalyScoreTotal += insight.score
-
-    if (insight.risk === 'High') {
-      highRiskCount += 1
-    }
-
-    if (insight.risk === 'Medium') {
-      mediumRiskCount += 1
-    }
-  }
-
-  const averageAnomalyScore =
-    anomalyInsights.length > 0 ? anomalyScoreTotal / anomalyInsights.length : 0
-
-  const topAnomalies = [...anomalyInsights]
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5)
-
-  const missingColumns = expectedColumns.filter(
-    (column) => !allHeaders.includes(column),
-  )
-
-  let totalDistance = 0
-  let speedCount = 0
-  let speedTotal = 0
-  let onCourseCount = 0
-  let onCourseTotal = 0
-  let maxDrift = 0
-
-  const chartData: ChartRow[] = []
-
-  for (let index = 0; index < rowsInRange.length; index += 1) {
-    const row = rowsInRange[index]
-
-    const distance = getNumberFromKeys(row, ['distance'])
-    if (distance !== null) {
-      totalDistance += distance
-    }
-
-    const avgSpeed = getNumberFromKeys(row, ['avg_speed_mps', 'avg_speed'])
-    if (avgSpeed !== null) {
-      speedTotal += avgSpeed
-      speedCount += 1
-    }
-
-    const onCourse = getNumberFromKeys(row, ['on_course_percent', 'on_course'])
-    if (onCourse !== null) {
-      onCourseTotal += onCourse
-      onCourseCount += 1
-    }
-
-    const offCourse = getNumberFromKeys(row, ['off_course'])
-    const driftMax = getNumberFromKeys(row, ['drift_max'])
-    const driftAvg = getNumberFromKeys(row, ['drift_avg'])
-    const drift = driftMax ?? driftAvg
-
-    if (drift !== null && drift > maxDrift) {
-      maxDrift = drift
-    }
-
-    if (chartData.length < 40) {
-      chartData.push({
-        row: `${startRow + index}`,
-        speed: avgSpeed,
-        onCourse,
-        offCourse,
-        drift,
-      })
-    }
-  }
-
-  const averageSpeed = speedCount > 0 ? speedTotal / speedCount : 0
-  const onCourseAverage = onCourseCount > 0 ? onCourseTotal / onCourseCount : 0
-
-  let mainChartMetric: MetricKey = 'speed'
-  let mainChartTitle = 'Average Speed (first 40 rows)'
-  let mainChartColor = '#cc5c1f'
-
-  if (selectedMetric === 'onCourse') {
-    mainChartMetric = 'onCourse'
-    mainChartTitle = 'On Course % (first 40 rows)'
-    mainChartColor = '#2f8f55'
-  }
-
-  if (selectedMetric === 'offCourse') {
-    mainChartMetric = 'offCourse'
-    mainChartTitle = 'Off Course % (first 40 rows)'
-    mainChartColor = '#d57b57'
-  }
-
-  if (selectedMetric === 'drift') {
-    mainChartMetric = 'drift'
-    mainChartTitle = 'Drift (first 40 rows)'
-    mainChartColor = '#6a6ad2'
-  }
-
-  const hasMainChartData = chartData.some(
-    (row) => getMetricValue(row, mainChartMetric) !== null,
-  )
 
   const handleFileUpload = async (fileList: FileList | null): Promise<void> => {
     if (!fileList) {
@@ -326,201 +139,44 @@ function App() {
       </header>
 
       <section className="card-grid">
-        <article className="panel upload-panel">
-          <h2>1. Load Session Data</h2>
-          <p>Drag files here or use the file picker to load exported session data.</p>
-          <label className="upload-button" aria-label="Upload session CSV files">
-            {isParsing ? 'Parsing files...' : 'Choose CSV Files'}
-            <input
-              className="file-input"
-              type="file"
-              accept=".csv"
-              multiple
-              onChange={(event) => {
-                void handleFileUpload(event.target.files)
-              }}
-            />
-          </label>
-          <div className="backend-load-box">
-            <p className="backend-load-title">Or load from backend API</p>
-            <div className="backend-url-row">
-              <label htmlFor="backendApiUrl">Backend URL</label>
-              <input
-                id="backendApiUrl"
-                type="text"
-                value={backendApiUrl}
-                onChange={(event) => {
-                  setBackendApiUrl(event.target.value)
-                }}
-                placeholder="http://localhost:4000"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  void refreshBackendSessions()
-                }}
-                disabled={isLoadingBackendSessions}
-              >
-                {isLoadingBackendSessions ? 'Refreshing...' : 'Refresh'}
-              </button>
-            </div>
-            <div className="backend-actions-row">
-              <select
-                value={selectedBackendSessionFileName}
-                onChange={(event) => {
-                  setSelectedBackendSessionFileName(event.target.value)
-                }}
-                disabled={backendSessions.length === 0}
-              >
-                {backendSessions.length === 0 ? (
-                  <option value="">No backend sessions found</option>
-                ) : (
-                  backendSessions.map((session) => (
-                    <option key={session.id} value={session.fileName}>
-                      {session.fileName}
-                    </option>
-                  ))
-                )}
-              </select>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!selectedBackendSessionFileName) {
-                    setParseError('Select a backend session first.')
-                    return
-                  }
-
-                  void importBackendSessions(
-                    [selectedBackendSessionFileName],
-                    'Selected import',
-                  )
-                }}
-                disabled={isImportingBackendSessions || !selectedBackendSessionFileName}
-              >
-                {isImportingBackendSessions ? 'Loading...' : 'Load Selected'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const fileNames = backendSessions.map((session) => session.fileName)
-                  void importBackendSessions(fileNames, 'Bulk import')
-                }}
-                disabled={isImportingBackendSessions || backendSessions.length === 0}
-              >
-                Load All
-              </button>
-            </div>
-            <p className="upload-meta">
-              Backend sessions: <strong>{backendSessions.length}</strong>
-            </p>
-            {backendStatus && <p className="backend-status">{backendStatus}</p>}
-          </div>
-          <p className="upload-meta">
-            Files: <strong>{parsedFiles.length}</strong> | Rows:{' '}
-            <strong>{totalRows}</strong>
-          </p>
-          <p className="upload-meta">
-            Using row range: <strong>{startRow}</strong> to <strong>{endRow}</strong>{' '}
-            ({rowsInRange.length} rows)
-          </p>
-          <div className="filter-row">
-            <label htmlFor="fileFilter">File filter:</label>
-            <select
-              id="fileFilter"
-              value={selectedFileName}
-              onChange={(event) => {
-                setSelectedFileName(event.target.value)
-              }}
-            >
-              {fileOptions.map((fileName) => (
-                <option key={fileName} value={fileName}>
-                  {fileName === 'all' ? 'All files' : fileName}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="metric-chip-row">
-            <p>Main chart metric:</p>
-            <div className="metric-chip-list">
-              {metricOptions.map((option) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  className={
-                    selectedMetric === option.key
-                      ? 'metric-chip metric-chip-active'
-                      : 'metric-chip'
-                  }
-                  onClick={() => {
-                    setSelectedMetric(option.key)
-                  }}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="detector-row">
-            <label htmlFor="detectorMode">Anomaly detector:</label>
-            <select
-              id="detectorMode"
-              value={detectorMode}
-              onChange={(event) => {
-                setDetectorMode(event.target.value as DetectorMode)
-              }}
-            >
-              <option value="hybrid">Hybrid (recommended)</option>
-              <option value="kmeans">K-Means only</option>
-              <option value="zscore">Z-Score only</option>
-            </select>
-          </div>
-          <div className="sensitivity-row">
-            <label htmlFor="anomalySensitivity">Sensitivity:</label>
-            <input
-              id="anomalySensitivity"
-              type="range"
-              min="20"
-              max="90"
-              step="1"
-              value={anomalySensitivity}
-              onChange={(event) => {
-                const nextValue = Number.parseInt(event.target.value, 10)
-                if (Number.isNaN(nextValue)) {
-                  return
-                }
-
-                setAnomalySensitivity(nextValue)
-              }}
-            />
-            <strong>{anomalySensitivity}</strong>
-          </div>
-          <p className="upload-meta">
-            Anomaly mode: <strong>{detectorModeLabel}</strong>
-          </p>
-          <div className="range-row">
-            <label htmlFor="startRow">Rows:</label>
-            <input
-              id="startRow"
-              type="number"
-              min="1"
-              value={startRowInput}
-              onChange={(event) => {
-                setStartRowInput(event.target.value)
-              }}
-            />
-            <span>to</span>
-            <input
-              id="endRow"
-              type="number"
-              min="1"
-              value={endRowInput}
-              onChange={(event) => {
-                setEndRowInput(event.target.value)
-              }}
-            />
-          </div>
-          {parseError && <p className="error-text">{parseError}</p>}
-        </article>
+        <DataLoadPanel
+          isParsing={isParsing}
+          handleFileUpload={handleFileUpload}
+          backendApiUrl={backendApiUrl}
+          setBackendApiUrl={setBackendApiUrl}
+          isLoadingBackendSessions={isLoadingBackendSessions}
+          refreshBackendSessions={refreshBackendSessions}
+          selectedBackendSessionFileName={selectedBackendSessionFileName}
+          setSelectedBackendSessionFileName={setSelectedBackendSessionFileName}
+          backendSessions={backendSessions}
+          isImportingBackendSessions={isImportingBackendSessions}
+          importBackendSessions={importBackendSessions}
+          setParseError={(value) => {
+            setParseError(value)
+          }}
+          backendStatus={backendStatus}
+          parsedFilesCount={parsedFiles.length}
+          totalRows={totalRows}
+          startRow={startRow}
+          endRow={endRow}
+          rowsInRangeCount={rowsInRange.length}
+          fileOptions={fileOptions}
+          selectedFileName={selectedFileName}
+          setSelectedFileName={setSelectedFileName}
+          metricOptions={metricOptions}
+          selectedMetric={selectedMetric}
+          setSelectedMetric={setSelectedMetric}
+          detectorMode={detectorMode}
+          setDetectorMode={setDetectorMode}
+          anomalySensitivity={anomalySensitivity}
+          setAnomalySensitivity={setAnomalySensitivity}
+          detectorModeLabel={detectorModeLabel}
+          startRowInput={startRowInput}
+          setStartRowInput={setStartRowInput}
+          endRowInput={endRowInput}
+          setEndRowInput={setEndRowInput}
+          parseError={parseError}
+        />
 
         <article className="panel schema-panel">
           <h2>Expected Columns</h2>
@@ -532,7 +188,7 @@ function App() {
             ))}
           </div>
           <p className="schema-meta">
-            Found {allHeaders.length} columns. Missing {missingColumns.length}.
+            Found {allHeadersCount} columns. Missing {missingColumns.length}.
           </p>
           {missingColumns.length > 0 && (
             <div className="chip-list">
