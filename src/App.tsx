@@ -36,9 +36,17 @@ type BackendSession = {
   updatedAt: string
 }
 
+const configuredApiBaseUrl = (
+  import.meta.env.VITE_API_BASE_URL as string | undefined
+)?.trim()
+
+const isLocalRuntime =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1')
+
 const defaultBackendApiUrl =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() ||
-  'http://localhost:4000'
+  configuredApiBaseUrl || (isLocalRuntime ? 'http://localhost:4000' : '')
 
 function normalizeApiBaseUrl(url: string): string {
   return url.trim().replace(/\/+$/, '')
@@ -377,6 +385,13 @@ function App() {
   }
 
   useEffect(() => {
+    if (!defaultBackendApiUrl) {
+      setBackendStatus(
+        'Set your backend URL, then click Refresh to load sessions.',
+      )
+      return
+    }
+
     void refreshBackendSessions()
   }, [])
 
