@@ -9,6 +9,15 @@ Simple backend for receiving and serving session CSV files.
 - List uploaded session CSV files
 - Read or download a session CSV
 
+## Storage modes
+
+This backend supports two storage modes:
+
+- `filesystem` (default): stores CSV files on local disk (`backend/data/sessions`).
+- `supabase`: stores CSV content and metadata in Supabase table storage.
+
+For cloud persistence on Render, use `supabase` mode.
+
 ## Quick start
 
 1. Install packages:
@@ -23,7 +32,22 @@ npm install
 cp .env.example .env
 ```
 
-3. Run in dev mode:
+3. Configure environment variables.
+
+Minimum for local filesystem mode:
+
+- `PORT=4000`
+- `CORS_ORIGIN=http://localhost:5173`
+- `STORAGE_MODE=filesystem`
+
+Minimum for Supabase mode:
+
+- `STORAGE_MODE=supabase`
+- `SUPABASE_URL=...`
+- `SUPABASE_SERVICE_ROLE_KEY=...`
+- `SUPABASE_SESSIONS_TABLE=sessions`
+
+4. Run in dev mode:
 
 ```bash
 npm run dev
@@ -68,3 +92,19 @@ curl -X POST http://localhost:4000/api/sessions/upload \
 
 - Point Unity upload URL to your backend public URL.
 - If you use browser frontend on another domain, set `CORS_ORIGIN`.
+
+## Supabase setup
+
+1. Open Supabase SQL editor.
+2. Run [supabase-schema.sql](supabase-schema.sql).
+3. In backend environment, set:
+  - `STORAGE_MODE=supabase`
+  - `SUPABASE_URL`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+  - `SUPABASE_SESSIONS_TABLE=sessions`
+4. Redeploy backend.
+
+After deployment, verify:
+
+- `GET /api/health` returns `"storageMode": "supabase"`
+- `GET /api/sessions` lists persisted sessions
