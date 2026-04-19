@@ -287,7 +287,10 @@ function App() {
     (row) => getMetricValue(row, mainChartMetric) !== null,
   )
 
-  const refreshBackendSessions = async (): Promise<void> => {
+  const refreshBackendSessions = async (
+    options: { autoLoadLatest?: boolean } = {},
+  ): Promise<void> => {
+    const { autoLoadLatest = false } = options
     const apiRoot = normalizeApiBaseUrl(backendApiUrl)
     if (!apiRoot) {
       setParseError('Enter a backend API URL first.')
@@ -313,6 +316,14 @@ function App() {
 
       if (sessions.length > 0) {
         setSelectedBackendSessionFileName(sessions[0].fileName)
+
+        if (autoLoadLatest) {
+          await importBackendSessions(
+            [sessions[0].fileName],
+            'Startup auto-load',
+          )
+          return
+        }
       } else {
         setSelectedBackendSessionFileName('')
       }
@@ -392,7 +403,7 @@ function App() {
       return
     }
 
-    void refreshBackendSessions()
+    void refreshBackendSessions({ autoLoadLatest: true })
   }, [])
 
   const handleFileUpload = async (fileList: FileList | null): Promise<void> => {
