@@ -1,8 +1,11 @@
 type CsvRow = Record<string, string>
 
+//risk labels shown in the UI after scoring
 export type RiskLabel = 'Low' | 'Medium' | 'High'
+//detector modes the user can pick from
 export type DetectorMode = 'zscore' | 'kmeans' | 'hybrid'
 
+//final shape of one analyzed row that gets rendered in the table and top anomaly list
 export interface RowAnomalyInsight {
   rowNumber: number
   score: number
@@ -10,17 +13,20 @@ export interface RowAnomalyInsight {
   reasons: string[]
 }
 
+//runtime options that control how scoring is calculated
 export interface AnomalyOptions {
   mode: DetectorMode
   sensitivity: number
 }
 
+//feature definition mapping one logical metric to possible csv keys
 type FeatureConfig = {
   name: string
   label: string
   keys: string[]
 }
 
+//stat summary for each feature after scanning all rows
 type FeatureStats = {
   name: string
   label: string
@@ -33,13 +39,17 @@ type FeatureZScore = {
   z: number
 }
 
+//small helper alias for clustering vectors
 type Vector = number[]
 
+//fallback options used when caller passes partial or empty config
 const defaultOptions: AnomalyOptions = {
   mode: 'hybrid',
   sensitivity: 55,
 }
 
+//the feature list is the heart of detection since every metric downstream is derived from this mapping
+//if a dataset uses different column names we can extend keys here without touching the scoring pipeline
 const featureConfigs: FeatureConfig[] = [
   { name: 'speed', label: 'Average Speed', keys: ['avg_speed_mps', 'avg_speed'] },
   { name: 'onCourse', label: 'On Course %', keys: ['on_course_percent', 'on_course'] },
@@ -48,6 +58,7 @@ const featureConfigs: FeatureConfig[] = [
   { name: 'elapsed', label: 'Elapsed Time', keys: ['elapsed_s'] },
 ]
 
+//generic clamp helper to keep values inside safe limits
 function clamp(value: number, minValue: number, maxValue: number): number {
   if (value < minValue) {
     return minValue
@@ -60,6 +71,7 @@ function clamp(value: number, minValue: number, maxValue: number): number {
   return value
 }
 
+//merges caller options with defaults and constrains sensitivity so tuning never breaks thresholds
 function resolveOptions(options?: Partial<AnomalyOptions>): AnomalyOptions {
   return {
     mode: options?.mode ?? defaultOptions.mode,
@@ -67,6 +79,7 @@ function resolveOptions(options?: Partial<AnomalyOptions>): AnomalyOptions {
   }
 }
 
+//finds one feature config by internal name so later loops can resolve key aliases quickly
 function findFeatureConfig(name: string): FeatureConfig | null {
   for (const item of featureConfigs) {
     if (item.name === name) {
@@ -77,6 +90,8 @@ function findFeatureConfig(name: string): FeatureConfig | null {
   return null
 }
 
+//reads the first usable numeric value from a list of possible keys
+//this keeps parsing resilient when csv headers vary across exports
 function getNumber(row: CsvRow, keys: string[]): number | null {
   for (const key of keys) {
     const rawValue = row[key]
@@ -93,6 +108,7 @@ function getNumber(row: CsvRow, keys: string[]): number | null {
   return null
 }
 
+//standard arithmetic mean helper
 function getMean(values: number[]): number {
   if (values.length === 0) {
     return 0
@@ -106,6 +122,8 @@ function getMean(values: number[]): number {
   return total / values.length
 }
 
+//standard deviation helper used to convert features onto a common scale
+//important because speed drift and percentages have very different raw magnitudes
 function getStd(values: number[], mean: number): number {
   if (values.length <= 1) {
     return 1
@@ -120,10 +138,13 @@ function getStd(values: number[], mean: number): number {
   const variance = totalSquaredDistance / values.length
   const std = Math.sqrt(variance)
 
-  // Prevent divide-by-zero when data points are all very similar.
+  //prevent divide by zero when values are almost identical
   return std < 0.0001 ? 1 : std
 }
 
+//builds stats per feature from the selected row range
+//this stage is where the model learns what normal looks like for the active dataset slice
+//later z score and vector normalization both depend on these means and std values
 function buildStats(rows: CsvRow[]): FeatureStats[] {
   const stats: FeatureStats[] = []
 
@@ -155,6 +176,7 @@ function buildStats(rows: CsvRow[]): FeatureStats[] {
   return stats
 }
 
+//euclidean distance helper used by kmeans assignment and final distance scoring
 function getDistance(a: Vector, b: Vector): number {
   let total = 0
 
@@ -166,6 +188,7 @@ function getDistance(a: Vector, b: Vector): number {
   return Math.sqrt(total)
 }
 
+//normalizes any score list to 0 to 100 for easier UI comparison and thresholding
 function normalizeTo100(values: number[]): number[] {
   if (values.length === 0) {
     return []
@@ -192,6 +215,9 @@ function normalizeTo100(values: number[]): number[] {
   return values.map((value) => Number((((value - minValue) / range) * 100).toFixed(1)))
 }
 
+//converts each row into a normalized feature vector
+//each value becomes a z-like normalized component around the feature mean
+//this creates a common coordinate space so clustering can compare mixed metrics fairly
 function buildVectors(rows: CsvRow[], stats: FeatureStats[]): Vector[] {
   const vectors: Vector[] = []
 
@@ -207,7 +233,7 @@ function buildVectors(rows: CsvRow[], stats: FeatureStats[]): Vector[] {
 
       const value = getNumber(row, config.keys)
       if (value === null) {
-        // Missing value becomes 0 after normalization (close to feature mean).
+        //missing values become zero which means near feature mean after normalization
         vector.push(0)
         continue
       }
@@ -221,6 +247,9 @@ function buildVectors(rows: CsvRow[], stats: FeatureStats[]): Vector[] {
   return vectors
 }
 
+//small kmeans implementation used as an unsupervised anomaly signal
+//steps are seed centroids assign rows recompute centers repeat fixed iterations
+//final score is distance to assigned centroid then scaled to 0 to 100
 function getKmeansScores(vectors: Vector[]): number[] {
   if (vectors.length === 0) {
     return []
@@ -292,6 +321,7 @@ function getKmeansScores(vectors: Vector[]): number[] {
   return normalizeTo100(distances)
 }
 
+//maps numeric anomaly score into Low Medium High with sensitivity aware thresholds
 function scoreToRisk(score: number, sensitivity: number): RiskLabel {
   const levelShift = (sensitivity - 50) * 0.6
   const mediumThreshold = clamp(45 - levelShift, 25, 65)
@@ -308,6 +338,10 @@ function scoreToRisk(score: number, sensitivity: number): RiskLabel {
   return 'Low'
 }
 
+//main pipeline entry used by dashboard components
+//flow is resolve options build feature stats build vectors optionally run kmeans
+//then per row compute z based signal combine with kmeans depending on mode build reasons and assign risk
+//output is ready for table rendering chart overlays and top anomaly summary cards
 export function buildAnomalyInsights(
   rows: CsvRow[],
   startRowNumber: number,
@@ -317,6 +351,7 @@ export function buildAnomalyInsights(
   const stats = buildStats(rows)
   const insights: RowAnomalyInsight[] = []
   const vectors = buildVectors(rows, stats)
+  //run kmeans only when needed to keep zscore only mode lightweight
   const kmeansScores =
     nextOptions.mode === 'kmeans' || nextOptions.mode === 'hybrid'
       ? getKmeansScores(vectors)
@@ -354,6 +389,7 @@ export function buildAnomalyInsights(
 
     const kmeansScore = kmeansScores[index] ?? 0
 
+    //mode switch lets us compare detector behavior during viva and experiments
     let score = zScoreValue
     if (nextOptions.mode === 'kmeans') {
       score = kmeansScore
@@ -363,6 +399,7 @@ export function buildAnomalyInsights(
       score = Number((zScoreValue * 0.45 + kmeansScore * 0.55).toFixed(1))
     }
 
+    //reason text is intentionally simple so non technical readers can interpret alerts quickly
     const reasons: string[] = []
     if (nextOptions.mode !== 'zscore' && kmeansScore >= 55) {
       reasons.push('Row is far from learned cluster center')
