@@ -1,101 +1,113 @@
-# React + TypeScript + Vite
+# GaitAnalytics
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+GaitAnalytics is the web platform for the FYP gait rehabilitation system. It includes:
 
-Currently, two official plugins are available:
+1. A React dashboard for session review and visual analytics.
+2. A Node.js backend API for CSV ingestion and session retrieval.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The system is currently hosted online for real-time demonstrations, and it can also be deployed manually in an offline/local environment when required.
 
-## React Compiler
+## System Overview
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. HoloLens rehabilitation app uploads session CSV data to the backend API.
+2. Backend stores session records (Supabase mode or filesystem mode).
+3. Frontend dashboard fetches available sessions and loads selected CSV data.
+4. Dashboard renders summary cards, anomaly insights, and charts.
 
-## Expanding the ESLint configuration
+## Repository Structure
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. `src/`:
+   Frontend React + TypeScript application.
+2. `backend/`:
+   Express API for uploads, listing sessions, and serving CSV content.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Core Features
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+1. CSV upload endpoint (`/api/sessions/upload`)
+2. Session listing endpoint (`/api/sessions`)
+3. Read/download endpoints for individual sessions
+4. Frontend session browser with backend auto-load on startup
+5. Visual analytics (distance, speed, on/off-course, drift)
+6. Lightweight anomaly scoring with selectable detector mode
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Tech Stack
+
+### Frontend
+
+1. React
+2. TypeScript
+3. Vite
+4. Recharts
+5. Papa Parse
+
+### Backend
+
+1. Node.js
+2. Express
+3. Multer
+4. Supabase JavaScript client
+
+### Deployment
+
+1. Render (frontend static site + backend web service)
+2. Supabase (persistent session storage)
+
+## Online Hosting
+
+This project is designed to run fully online:
+
+1. Frontend hosted publicly (Render static site).
+2. Backend hosted publicly (Render web service).
+3. Supabase used for persistent session data.
+
+This setup supports live demonstrations where HoloLens uploads can be viewed immediately in the dashboard.
+
+## Manual Offline Deployment
+
+If online services are unavailable, the project can be run manually in a local/offline setup.
+
+### Prerequisites
+
+1. Node.js 18+
+2. npm
+
+### Backend (local)
+
+1. Open terminal in `backend/`
+2. Install dependencies:
+
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+3. Configure environment file from `.env.example`.
+4. Start backend:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
 
-## Anomaly Detection (FYP Notes)
+### Frontend (local)
 
-This dashboard has a lightweight anomaly detector so it can run directly in the browser.
+1. Open terminal in project root.
+2. Install dependencies:
 
-### Detector modes
+```bash
+npm install
+```
 
-- `Z-Score only`
-  - Uses feature statistics (mean and standard deviation).
-  - A row gets a higher score if it is far from normal values.
-- `K-Means only`
-  - Uses a simple unsupervised clustering model (k=3).
-  - A row gets a higher score when it is far from its cluster center.
-- `Hybrid (recommended)`
-  - Combines both methods:
-  - `score = 0.45 * zScore + 0.55 * kMeansScore`
+3. Start frontend:
 
-### Sensitivity
+```bash
+npm run dev
+```
 
-- The sensitivity slider changes the `Medium` and `High` risk thresholds.
-- Higher sensitivity means more rows are flagged.
-- Lower sensitivity means only stronger anomalies are flagged.
+4. In the dashboard backend URL field, set local API base URL (example: `http://localhost:4000`).
 
-### Explainability shown in UI
+## Notes
 
-- `anomaly_score` and `anomaly_risk` are shown in the preview table.
-- A short reason is shown for each row (for example, unusual speed or off-course behavior).
-- The dashboard also lists the top anomaly rows in the selected row range.
+1. Backend storage mode is controlled by environment variables.
+2. For persistence in production, Supabase mode is recommended.
+3. For isolated local testing, filesystem mode is available.
+
+For backend storage and Supabase table setup, see `backend/README.md` and `backend/supabase-schema.sql`.
