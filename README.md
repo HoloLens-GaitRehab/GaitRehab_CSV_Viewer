@@ -14,6 +14,47 @@ The system is currently hosted online for real-time demonstrations, and it can a
 3. Frontend dashboard fetches available sessions and loads selected CSV data.
 4. Dashboard renders summary cards, anomaly insights, and charts.
 
+## Architecture Diagram
+
+```mermaid
+flowchart LR
+   HL[HoloLens App] -->|CSV upload| API
+
+   subgraph FE[Frontend: React + TypeScript + Vite]
+      UI[App UI and Panels]
+      Hooks[useBackendSessions and useSessionAnalytics]
+      Charts[Recharts Visualizations]
+      UI --> Hooks
+      Hooks --> Charts
+   end
+
+   subgraph BE[Backend: Node.js + Express]
+      API[/REST API\n/api/sessions/*/]
+      Upload[Upload Handler Multer]
+      SessionService[Session List Read Download Logic]
+      API --> Upload
+      API --> SessionService
+   end
+
+   FE -->|HTTP requests| API
+   Upload --> StorageMode{STORAGE_MODE}
+   SessionService --> StorageMode
+
+   StorageMode -->|supabase| SB[(Supabase PostgreSQL)]
+   StorageMode -->|filesystem| FS[(Local Session Files)]
+
+   SB --> API
+   FS --> API
+
+   API -->|session metadata and csv| FE
+```
+
+Diagram notes:
+
+1. Frontend and backend are decoupled and communicate through REST endpoints.
+2. Backend supports two persistence paths selected by `STORAGE_MODE`.
+3. Supabase is used for persistent hosted deployment, while filesystem mode supports offline/local testing.
+
 ## Repository Structure
 
 1. `src/`:
