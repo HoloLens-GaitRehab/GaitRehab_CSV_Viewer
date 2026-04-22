@@ -34,6 +34,17 @@ export function ChartsPanel({
   mainChartColor,
   hasMainChartData,
 }: ChartsPanelProps) {
+  let mainYAxisLabel = 'Value'
+  if (mainChartMetric === 'speed') {
+    mainYAxisLabel = 'Speed (m/s)'
+  }
+  if (mainChartMetric === 'onCourse' || mainChartMetric === 'offCourse') {
+    mainYAxisLabel = 'Percentage (%)'
+  }
+  if (mainChartMetric === 'drift') {
+    mainYAxisLabel = 'Drift (m)'
+  }
+
   return (
     <section className="charts-grid">
       <article className="chart-card">
@@ -45,8 +56,18 @@ export function ChartsPanel({
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="row" />
-                <YAxis />
+                <XAxis
+                  dataKey="row"
+                  label={{ value: 'Row', position: 'insideBottom', offset: -5 }}
+                />
+                <YAxis
+                  label={{
+                    value: mainYAxisLabel,
+                    angle: -90,
+                    position: 'insideLeft',
+                    offset: 5,
+                  }}
+                />
                 <Tooltip />
                 <Line
                   type="monotone"
@@ -71,8 +92,19 @@ export function ChartsPanel({
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="row" />
-                <YAxis domain={[0, 100]} />
+                <XAxis
+                  dataKey="row"
+                  label={{ value: 'Row', position: 'insideBottom', offset: -5 }}
+                />
+                <YAxis
+                  domain={[0, 100]}
+                  label={{
+                    value: 'Percentage (%)',
+                    angle: -90,
+                    position: 'insideLeft',
+                    offset: 5,
+                  }}
+                />
                 <Tooltip />
                 <Bar dataKey="onCourse" fill="#4ea16d" />
                 <Bar dataKey="offCourse" fill="#d57b57" />
@@ -91,8 +123,18 @@ export function ChartsPanel({
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="row" />
-                <YAxis />
+                <XAxis
+                  dataKey="row"
+                  label={{ value: 'Row', position: 'insideBottom', offset: -5 }}
+                />
+                <YAxis
+                  label={{
+                    value: 'Drift (m)',
+                    angle: -90,
+                    position: 'insideLeft',
+                    offset: 5,
+                  }}
+                />
                 <Tooltip />
                 <Line
                   type="monotone"
