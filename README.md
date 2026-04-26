@@ -14,6 +14,17 @@ The system is currently hosted online for real-time demonstrations, and it can a
 3. Frontend dashboard fetches available sessions and loads selected CSV data.
 4. Dashboard renders summary cards, anomaly insights, and charts.
 
+## System Preview
+### Main Dashboard
+<img width="1122" height="861" alt="image" src="https://github.com/user-attachments/assets/55c69bdc-ade5-4f8b-86be-dba29b7ea55c" />
+
+### Graphs
+<img width="1139" height="648" alt="image" src="https://github.com/user-attachments/assets/187e6b59-d2db-444f-8df5-e4d1093bc1f0" />
+
+### Anomaly Detection
+<img width="1139" height="717" alt="image" src="https://github.com/user-attachments/assets/97912774-f99a-4e2b-90bd-b3d08cb5d265" />
+
+
 ## Architecture Diagram
 
 ```mermaid
